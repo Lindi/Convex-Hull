@@ -16,13 +16,22 @@ package
 		
 		public function Main()
 		{
+			start();
+		}
+		
+		private function start( ):void
+		{
+			//	Clear the points that are currently in there
+			while ( points.length )
+				points.pop();
+			
 			//	Add a bunch of points 
 			var margin:int = 20 ;
 			var n:int = int( Math.random() * 40 ) + 20 ;
 			for ( var i:int = 0; i < n; i++ )
 			{
-				var x:int = margin + int( Math.random() * ( stage.stageWidth - margin ));
-				var y:int = margin + int( Math.random() * ( stage.stageHeight - margin ));
+				var x:int = margin + int( Math.random() * ( stage.stageWidth - margin * 2 ));
+				var y:int = margin + int( Math.random() * ( stage.stageHeight - margin * 2 ));
 				var point:Point = new Point( x, y );
 				points.push( point );
 			}
@@ -43,7 +52,7 @@ package
 				points[ j+1]= point ;
 			}
 			
-
+			
 			
 			//	Grab the minimum point, which is the first in the list
 			min = points[0] ;
@@ -70,32 +79,32 @@ package
 				clone[i] = points[i].clone();
 			}
 			convexHull( points, clone );
-		
-/*			//	Determine the convex hull
+			
+			/*			//	Determine the convex hull
 			var m:int = 2 ;
 			n = points.length ;
 			for ( i = 3; i < n; i++ )
 			{
-				if ( i >= points.length )
-					break ;
-				while ( ccw( points[m-1], points[m], points[i] ) <= 0 )
-				{
-					if ( m == 2 )
-					{
-						tmp = points[m] ;
-						points[m] = points[i] ;
-						points[i] = tmp ;
-						i++ ;
-						trace("i(ccw)", i, m);
-					} else {
-						m-- ;
-						trace("i(m--)", i, m);
-					}
-				}
-				m++ ;
-				tmp = points[ m ] ;
-				points[m] = points[i] ;
-				points[i] = tmp ;
+			if ( i >= points.length )
+			break ;
+			while ( ccw( points[m-1], points[m], points[i] ) <= 0 )
+			{
+			if ( m == 2 )
+			{
+			tmp = points[m] ;
+			points[m] = points[i] ;
+			points[i] = tmp ;
+			i++ ;
+			trace("i(ccw)", i, m);
+			} else {
+			m-- ;
+			trace("i(m--)", i, m);
+			}
+			}
+			m++ ;
+			tmp = points[ m ] ;
+			points[m] = points[i] ;
+			points[i] = tmp ;
 			}
 			
 			// Plot the points
@@ -106,16 +115,17 @@ package
 			graphics.lineStyle(1,0xff0000);
 			for ( i = 0; i < points.length-1; i++ )
 			{
-				var a:Point = points[i] ;
-				var b:Point = points[i+1] ;
-				graphics.moveTo( a.x, a.y );
-				graphics.lineTo( b.x, b.y );
+			var a:Point = points[i] ;
+			var b:Point = points[i+1] ;
+			graphics.moveTo( a.x, a.y );
+			graphics.lineTo( b.x, b.y );
 			}
 			
 			b = points[0] ;
 			graphics.moveTo( a.x, a.y );
 			graphics.lineTo( b.x, b.y );
-*/			
+			*/			
+			
 		}
 		
 		private function convexHull( points:Vector.<Point>, clone:Vector.<Point> ):void
@@ -128,15 +138,33 @@ package
 			timer.addEventListener(TimerEvent.TIMER,
 				function ( event:TimerEvent ):void
 				{
+					if ( event.type == TimerEvent.TIMER_COMPLETE )
+					{
+						timer.removeEventListener(TimerEvent.TIMER_COMPLETE,arguments.callee);
+						timer.stop();
+						start();
+						return ;
+					}
 					if ( i >= points.length )
 					{
-						timer.removeEventListener( TimerEvent.TIMER, arguments.callee );
-						timer.stop();
+						//	Plot the rest of the convex hull
 						points[m+1] = min ;
 						foo( points, clone, m+1 );
 						graphics.moveTo( min.x, min.y );
 						graphics.lineTo( points[1].x, points[1].y );
 						plot( clone );
+						
+						//	Stop the repeating timer
+						timer.removeEventListener( TimerEvent.TIMER, arguments.callee );
+						timer.stop();
+						
+						//	Pause five seconds and refresh a new animation
+						timer.reset();
+						timer.repeatCount = 1 ;
+						timer.delay = 5000 ;
+						timer.addEventListener(TimerEvent.TIMER_COMPLETE,arguments.callee);
+						timer.start();
+						
 						return ;
 					}
 					while ( ccw( points[m-1], points[m], points[i] ) >= 0 )
@@ -171,7 +199,7 @@ package
 		private function foo( points:Vector.<Point>, clone:Vector.<Point>, m:int  ):void
 		{
 			graphics.clear();
-			graphics.lineStyle(1,0xff0000);
+			graphics.lineStyle(1,0x000000);
 			for ( var j:int = 1; j < m; j++ )
 			{
 				var a:Point = points[j];
@@ -179,7 +207,6 @@ package
 				graphics.moveTo( a.x, a.y );
 				graphics.lineTo( b.x, b.y );
 			}
-			
 		}
 		
 		/**
@@ -193,11 +220,10 @@ package
 			graphics.lineStyle( undefined );
 			for each ( var point:Point in points )
 			{
-				graphics.beginFill( 0x0000ff );
+				graphics.beginFill( 0xaaaaaa );
 				graphics.drawCircle( point.x, point.y, 3 );
 				graphics.endFill() ;
 			}
-			
 		}
 		
 		/**
@@ -218,8 +244,6 @@ package
 				graphics.moveTo( a.x, a.y );
 				graphics.lineTo( b.x, b.y );
 			}
-			
-			
 		}
 		
 		/**
