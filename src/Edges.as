@@ -148,19 +148,37 @@ package
 					}
 					
 					drawPolygonEdges( i , j );
-					graphics.lineStyle(1,0x0000ff);
-					graphics.moveTo( center.x, center.y );
-					graphics.lineTo( mouse.x, mouse.y ) ;
 					if ( terminate )
 					{
+						var vertex:Vector2d = polygon.getVertex( mid ) ;
+						var v:Vector2d = vertex.Subtract( center ) ;
+						var projection:Number = v.dot( direction );
+						projection /= direction.length ;
+						direction.normalize();
+						var x:Number = direction.x * projection ;
+						var y:Number = direction.y * projection ;
+						graphics.lineStyle(1,0xff0000);
+						graphics.moveTo( center.x, center.y );
+						graphics.lineTo( center.x + x, center.y + y ) ;
+						graphics.lineStyle(1,0x0000ff);
+						graphics.moveTo( center.x + x, center.y + y ) ;
+						graphics.lineTo( mouse.x, mouse.y ) ;
+						
+						
 						graphics.lineStyle( undefined ) ;
 						graphics.beginFill( 0x00aaff );
-						graphics.drawCircle( polygon.getVertex( mid ).x, polygon.getVertex( mid ).y, 4 );
+						graphics.drawCircle( vertex.x, vertex.y, 4 );
 						graphics.endFill();
 						
 						timer.stop();
 						timer.removeEventListener(TimerEvent.TIMER,arguments.callee );
 						timer = null ;
+					} else {
+						
+						graphics.lineStyle(1,0x0000ff);
+						graphics.moveTo( center.x, center.y );
+						graphics.lineTo( mouse.x, mouse.y ) ;
+						
 					}
 				});
 			timer.start();
