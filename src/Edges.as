@@ -150,6 +150,7 @@ package
 					drawPolygonEdges( i , j );
 					if ( terminate )
 					{
+						//	Draw the projection of the extreme vertex onto the direction vector
 						var vertex:Vector2d = polygon.getVertex( mid ) ;
 						var v:Vector2d = vertex.Subtract( center ) ;
 						var projection:Number = v.dot( direction );
@@ -160,21 +161,26 @@ package
 						graphics.lineStyle(1,0xff0000);
 						graphics.moveTo( center.x, center.y );
 						graphics.lineTo( center.x + x, center.y + y ) ;
+						
+						//	Draw the remainder of the direction vector
 						graphics.lineStyle(1,0x0000ff);
 						graphics.moveTo( center.x + x, center.y + y ) ;
 						graphics.lineTo( mouse.x, mouse.y ) ;
 						
-						
+						//	Draw the extreme vertex
 						graphics.lineStyle( undefined ) ;
 						graphics.beginFill( 0x00aaff );
 						graphics.drawCircle( vertex.x, vertex.y, 4 );
 						graphics.endFill();
 						
+						//	Hang the DJ
 						timer.stop();
-						timer.removeEventListener(TimerEvent.TIMER,arguments.callee );
+						timer.removeEventListener( TimerEvent.TIMER,arguments.callee );
 						timer = null ;
+						
 					} else {
 						
+						//	Draw the direction vector
 						graphics.lineStyle(1,0x0000ff);
 						graphics.moveTo( center.x, center.y );
 						graphics.lineTo( mouse.x, mouse.y ) ;
