@@ -215,12 +215,12 @@ package
 				graphics.moveTo( a.x, a.y ) ;
 				graphics.lineTo( b.x, b.y ) ;
 				
-				var x:Number = a.x + ( b.x - a.x )/2 ;
-				var y:Number = a.y + ( b.y - a.y )/2 ;
-				var dx:Number = normals[i].x * 5 ;
-				var dy:Number = normals[i].y * 5 ;
-				graphics.moveTo( x, y );
-				graphics.lineTo( x + dx, y + dy );
+//				var x:Number = a.x + ( b.x - a.x )/2 ;
+//				var y:Number = a.y + ( b.y - a.y )/2 ;
+//				var dx:Number = normals[i].x * 5 ;
+//				var dy:Number = normals[i].y * 5 ;
+//				graphics.moveTo( x, y );
+//				graphics.lineTo( x + dx, y + dy );
 			}
 		}
 		
