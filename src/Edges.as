@@ -49,7 +49,7 @@ package
 			{
 				var j:int = i - 1;
 				var point:Vector2d = points[i];
-				while ( j >= 0 && lessThan( point, points[j] ))
+				while ( j >= 0 && Main.lessThan( point, points[j] ))
 				{
 					var tmp:Vector2d = points[j] ;
 					points[j] = point ;
@@ -67,7 +67,7 @@ package
 			{
 				j = i - 1 ;
 				point = points[i] ;
-				while ( j >= 1 && angleLessThan( point, points[j], min ))
+				while ( j >= 1 && Main.angleLessThan( point, points[j], min ))
 				{
 					tmp = points[j] ;
 					points[j] = point ;
@@ -403,38 +403,6 @@ package
 				graphics.moveTo( a.x, a.y ) ;
 				graphics.lineTo( b.x, b.y ) ;
 			}
-		}
-		
-		
-		/**
-		 * Returns true of a.y is less than b.y or
-		 * if a.x is less than b.x
-		 * @param a
-		 * @param b
-		 * 
-		 */		
-		private function lessThan( a:Vector2d, b:Vector2d ):Boolean
-		{
-			if ( a.y < b.y )
-				return true ;
-			return false ;
-		}
-
-		/**
-		 * Returns true if the dot product of point a with point min
-		 * is less than the dot product of point b with min 
-		 * @param a
-		 * @param b
-		 * @param min
-		 * 
-		 */		
-		private function angleLessThan( a:Vector2d, b:Vector2d, min:Vector2d ):Boolean
-		{
-			var ax:Number = ( a.x - min.x ) ;
-			var ay:Number = ( a.y - min.y ) ;
-			var bx:Number = ( b.x - min.x ) ;
-			var by:Number = ( b.y - min.y ) ;
-			return ( ax/Math.sqrt(ax * ax + ay * ay) < bx/Math.sqrt(bx * bx + by * by));
 		}
 	}
 }

@@ -1,18 +1,21 @@
 package
 {
+	import flash.display.Graphics;
 	import flash.display.Sprite;
 	import flash.events.TimerEvent;
 	import flash.geom.Point;
 	import flash.geom.Vector3D;
 	import flash.utils.Timer;
 	
-	import org.osmf.events.TimeEvent;
+	import geometry.Vector2d;
+
+;
 	
 	[SWF(width='400',height='400',backgroundColor='#ffffff')]
 	public class Main extends Sprite
 	{
-		private var points:Vector.<Point> = new Vector.<Point>( ) ;
-		private var min:Point  ;	
+		private var points:Vector.<Vector2d> = new Vector.<Vector2d>( ) ;
+		private var min:Vector2d  ;	
 		
 		public function Main()
 		{
@@ -32,18 +35,18 @@ package
 			{
 				var x:int = margin + int( Math.random() * ( stage.stageWidth - margin * 2 ));
 				var y:int = margin + int( Math.random() * ( stage.stageHeight - margin * 2 ));
-				var point:Point = new Point( x, y );
+				var point:Vector2d = new Vector2d( x, y );
 				points.push( point );
 			}
 			
-			//	Sort points lexicographically
+			//	Sort points by y-coordinate
 			for ( i = 1; i < points.length; i++ )
 			{
 				var j:int = i - 1;
 				point = points[i];
 				while ( j >= 0 && lessThan( point, points[j] ))
 				{
-					var tmp:Point = points[j] ;
+					var tmp:Vector2d = points[j] ;
 					points[j] = point ;
 					points[j+1] = tmp ;
 					j-- ;
@@ -73,7 +76,7 @@ package
 				points[j+1]= point ;
 			}
 			
-			var clone:Vector.<Point> = new Vector.<Point>( points.length );
+			var clone:Vector.<Vector2d> = new Vector.<Vector2d>( points.length );
 			for ( i=0; i <points.length; i++)
 			{
 				clone[i] = points[i].clone();
@@ -128,12 +131,12 @@ package
 			
 		}
 		
-		private function convexHull( points:Vector.<Point>, clone:Vector.<Point> ):void
+		private function convexHull( points:Vector.<Vector2d>, clone:Vector.<Vector2d> ):void
 		{
 			var m:int = 2 ;
 			var n:int = points.length ;
 			var i:int = 3 ;
-			var tmp:Point ;
+			var tmp:Vector2d ;
 			var timer:Timer = new Timer( 250 );
 			timer.addEventListener(TimerEvent.TIMER,
 				function ( event:TimerEvent ):void
@@ -152,7 +155,7 @@ package
 						foo( points, clone, m+1 );
 						graphics.moveTo( min.x, min.y );
 						graphics.lineTo( points[1].x, points[1].y );
-						plot( clone );
+						plot( clone, graphics );
 						
 						//	Stop the repeating timer
 						timer.removeEventListener( TimerEvent.TIMER, arguments.callee );
@@ -176,11 +179,11 @@ package
 							points[i] = tmp ;
 							i++ ;
 							foo( points, clone, m );
-							plot( clone );
+							plot( clone, graphics );
 						} else {
 							m-- ;
 							foo( points, clone, m );
-							plot( clone );
+							plot( clone, graphics );
 						}
 					}
 					m++ ;
@@ -189,21 +192,21 @@ package
 					points[i] = tmp ;
 					i++;
 					foo( points, clone, m );
-					plot( clone );
+					plot( clone, graphics );
 					
 					
 				});
 			timer.start();
 		}
 		
-		private function foo( points:Vector.<Point>, clone:Vector.<Point>, m:int  ):void
+		private function foo( points:Vector.<Vector2d>, clone:Vector.<Vector2d>, m:int  ):void
 		{
 			graphics.clear();
 			graphics.lineStyle(1,0x000000);
 			for ( var j:int = 1; j < m; j++ )
 			{
-				var a:Point = points[j];
-				var b:Point = points[j+1];
+				var a:Vector2d = points[j];
+				var b:Vector2d = points[j+1];
 				graphics.moveTo( a.x, a.y );
 				graphics.lineTo( b.x, b.y );
 			}
@@ -214,11 +217,11 @@ package
 		 * @param points
 		 * 
 		 */		
-		private function plot( points:Vector.<Point> ):void
+		internal static function plot( points:Vector.<Vector2d>, graphics:Graphics ):void
 		{
 			//	Draw the points
 			graphics.lineStyle( undefined );
-			for each ( var point:Point in points )
+			for each ( var point:Vector2d in points )
 			{
 				graphics.beginFill( 0xaaaaaa );
 				graphics.drawCircle( point.x, point.y, 3 );
@@ -231,16 +234,16 @@ package
 		 * @param points
 		 * 
 		 */		
-		private function draw( points:Vector.<Point> ):void
+		internal static function draw( points:Vector.<Vector2d>, graphics:Graphics ):void
 		{
-			plot( points );
+			plot( points, graphics );
 			
 			//	Draw the convex hull
 			graphics.lineStyle(1,0xff0000);
 			for ( var i:int = 0; i < points.length-1; i++ )
 			{
-				var a:Point = points[i] ;
-				var b:Point = points[i+1] ;
+				var a:Vector2d = points[i] ;
+				var b:Vector2d = points[i+1] ;
 				graphics.moveTo( a.x, a.y );
 				graphics.lineTo( b.x, b.y );
 			}
@@ -256,7 +259,7 @@ package
 		 * @return 
 		 * 
 		 */		
-		private function ccw( a:Point, b:Point, c:Point ):Number 
+		private function ccw( a:Vector2d, b:Vector2d, c:Vector2d ):Number 
 		{
 			return ( b.x - a.x ) * ( c.y - a.y ) - ( b.y - a.y ) * ( c.x - a.x );
 		}
@@ -267,15 +270,15 @@ package
 		 * @param points
 		 * 
 		 */		
-		private function sort( points:Vector.<Point> ):void
+		private function sort( points:Vector.<Vector2d> ):void
 		{
 			for ( var i:int = 1; i < points.length; i++ )
 			{
 				var j:int = i-1;
-				var point:Point = points[ i ] ;
+				var point:Vector2d = points[ i ] ;
 				while ( j >= 0 && angleLessThan( point, points[j], min ))
 				{
-					var tmp:Point = point ;
+					var tmp:Vector2d = point ;
 					points[ i ] = points[ j ] ;
 					points[ j ] = tmp ;
 					j-- ;
@@ -291,7 +294,7 @@ package
 		 * @param b
 		 * 
 		 */		
-		private function lessThan( a:Point, b:Point ):Boolean
+		internal static function lessThan( a:Vector2d, b:Vector2d ):Boolean
 		{
 			if ( a.y < b.y )
 				return true ;
@@ -306,7 +309,7 @@ package
 		 * @param min
 		 * 
 		 */		
-		private function angleLessThan( a:Point, b:Point, min:Point ):Boolean
+		internal static function angleLessThan( a:Vector2d, b:Vector2d, min:Vector2d ):Boolean
 		{
 			var ax:Number = ( a.x - min.x ) ;
 			var ay:Number = ( a.y - min.y ) ;
@@ -316,16 +319,5 @@ package
 			return ( ax/Math.sqrt(ax * ax + ay * ay) < bx/Math.sqrt(bx * bx + by * by));
 		}
 		
-		/**
-		 * Returns the dot product of one point with another
-		 * @param a
-		 * @param b
-		 * @return 
-		 * 
-		 */		
-		private function dot( a:Point, b:Point ):Number
-		{
-			return ( a.x * b.x + a.y * b.y );
-		}
 	}
 }

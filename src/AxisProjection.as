@@ -1,5 +1,6 @@
 package
 {
+	import flash.display.Graphics;
 	import flash.display.Sprite;
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
@@ -39,12 +40,12 @@ package
 			//	Grab the polygon points (should probably name these vertices)
 			var points:Vector.<Vector2d> = polygon.vertices ;
 			
-			//	Sort points lexicographically
+			//	Sort points by y-coordinate
 			for ( i = 1; i < points.length; i++ )
 			{
 				var j:int = i - 1;
 				var point:Vector2d = points[i];
-				while ( j >= 0 && lessThan( point, points[j] ))
+				while ( j >= 0 && Main.lessThan( point, points[j] ))
 				{
 					var tmp:Vector2d = points[j] ;
 					points[j] = point ;
@@ -62,7 +63,7 @@ package
 			{
 				j = i - 1 ;
 				point = points[i] ;
-				while ( j >= 1 && angleLessThan( point, points[j], min ))
+				while ( j >= 1 && Main.angleLessThan( point, points[j], min ))
 				{
 					tmp = points[j] ;
 					points[j] = point ;
@@ -77,7 +78,7 @@ package
 			polygon.updateLines();
 			
 			//	Draw the polygon
-			draw( points ) ;
+			draw( points, graphics ) ;
 			
 			//	Listen for the mouse move event to highlight the nearest polygon edge
 			//	stage.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
@@ -88,7 +89,7 @@ package
 		 * Draw the polygon 
 		 * 
 		 */		
-		private function draw( points:Vector.<Vector2d> ):void
+		internal static function draw( points:Vector.<Vector2d>, graphics:Graphics ):void
 		{
 			//	Now the points should be counter clockwise
 			//	Draw the polygon
@@ -112,7 +113,11 @@ package
 		 */		
 		private function move( event:MouseEvent ):void
 		{
-			//	Find the nearest line to the polygon
+			//	The center of the stage
+			var w:Number = stage.stageWidth ;
+			var h:Number = stage.stageHeight ;
+
+			//	Grab the polygon vertices, normals and edges
 			var points:Vector.<Vector2d> = polygon.vertices ;
 			var edges:Vector.<Vector2d> = polygon.edges ;
 			var normals:Vector.<Vector2d> = polygon.normals ;
@@ -134,30 +139,25 @@ package
 				graphics.lineTo( b.x, b.y ) ;
 			}
 			
-			//	Draw a line defined by the mouse location and the 
-			//	center of the polygon from an edge of the stage to the center of the polygon
-			var w:Number = stage.stageWidth ;
-			var h:Number = stage.stageHeight ;
-			var center:Vector2d = new Vector2d( w/2, h/2 );
+			//	Grab the polygon's center
+			var center:Vector2d = polygon.centroid ;
 			
 			//	Get the direction from the center of the stage to the mouse
 			var direction:Vector2d = mouse.Subtract( center ) ;
 			
-			//	Displace the direction vector 50 pixels in the normal direction
+			//	Displace the direction vector 100 pixels in the normal direction
 			var scale:int = 100 ;	
 
 			var unit:Vector2d = direction.clone();
 			unit.normalize();
+			
 			var normal:Vector2d = unit.perp() ;
 			graphics.lineStyle( .5, 0xcccccc ) ;
 			a = center.Add( new Vector2d( normal.x * scale, normal.y * scale ));
 			b = mouse.Add( new Vector2d( normal.x * scale, normal.y * scale ));
-			c = getEdgeIntersection( a, b, "left" );
-			if ( c == null )
-				c = getEdgeIntersection( a, b, "top" );
-			d = getEdgeIntersection( a, b, "right" );
-			if ( d == null )
-				d = getEdgeIntersection( a, b, "bottom" );
+			c = new Vector2d();
+			d = new Vector2d();
+			getEdgeIntersection( a, b, c, d, w, h ) ;
 			if ( c != null && d != null )
 			{
 				graphics.moveTo( c.x, c.y );
@@ -165,12 +165,7 @@ package
 			}
 			a = center.Add( new Vector2d( -normal.x * scale, -normal.y * scale ));
 			b = mouse.Add( new Vector2d( -normal.x * scale, -normal.y * scale ));
-			c = getEdgeIntersection( a, b, "left" );
-			if ( c == null )
-				c = getEdgeIntersection( a, b, "top" );
-			d = getEdgeIntersection( a, b, "right" );
-			if ( d == null )
-				d = getEdgeIntersection( a, b, "bottom" );
+			getEdgeIntersection( a, b, c, d, w, h ) ;
 			if ( c != null && d != null )
 			{
 				graphics.moveTo( c.x, c.y );
@@ -179,11 +174,12 @@ package
 			
 			//	Project the vector from the polygon centroid to the extreme vertex
 			//	on to the vector from the middle of the polygon to the mouse
-			//	Get the extreme vertex
-			var extreme:int = getExtremeIndex( polygon, direction )-1;
+			
+			//	First, get the extreme vertex and draw it
+			var extreme:int = getExtremeIndex( polygon, direction );
 			var vertex:Vector2d = polygon.getVertex( extreme ) ;
 			graphics.lineStyle( undefined ) ;
-			graphics.beginFill( 0x00ff00 );
+			graphics.beginFill( 0xff0000 );
 			graphics.drawCircle( vertex.x, vertex.y, 3 ) ;
 			graphics.endFill();
 			
@@ -191,7 +187,7 @@ package
 			var v:Vector2d = vertex.Subtract( center ) ;
 			
 			//	Take the dot product of that vector onto the direction vector
-			//	and divide by the length of the direction vector to ge the
+			//	and divide by the length of the direction vector to get the
 			//	length of the projection. 
 			var projection:Number = v.dot( direction );
 			projection /= direction.length ;
@@ -216,10 +212,10 @@ package
 			
 			//	Now do it in the other direction
 			direction.negate();
-			extreme = getExtremeIndex( polygon, direction )-1;
+			extreme = getExtremeIndex( polygon, direction );
 			vertex = polygon.getVertex( extreme ) ;
 			graphics.lineStyle( undefined ) ;
-			graphics.beginFill( 0x00ff00 );
+			graphics.beginFill( 0xff0000 );
 			graphics.drawCircle( vertex.x, vertex.y, 3 ) ;
 			graphics.endFill();
 
@@ -237,7 +233,6 @@ package
 			s = ( -unit.y * projection ) + center.y + ( normal.y * scale ) ;
 			graphics.moveTo( p, q );
 			graphics.lineTo( r, s ) ;
-
 			p = ( unit.x * projection ) + center.x + ( -normal.x * scale ) ;
 			q = ( unit.y * projection ) + center.y + ( -normal.y * scale ) ;
 			r = ( -unit.x * projection ) + center.x + ( -normal.x * scale ) ;
@@ -251,10 +246,11 @@ package
 			graphics.lineTo( mouse.x, mouse.y ) ;
 			
 			//	Draw a border
-			graphics.lineStyle( 1, 0x999999 ) ;
-			graphics.drawRect( 0, 0, stage.stageWidth-1, stage.stageHeight-1 );
+//			graphics.lineStyle( 1, 0x999999 ) ;
+//			graphics.drawRect( 0, 0, stage.stageWidth-1, stage.stageHeight-1 );
 			
 		}
+		
 		
 		/**
 		 * Returns the intersection of a line defined by points a and b with the
@@ -265,23 +261,29 @@ package
 		 * @return 
 		 * 
 		 */		
-		private function getEdgeIntersection( a:Vector2d, b:Vector2d, edge:String ):Vector2d
+		internal static function getEdgeIntersection( a:Vector2d, b:Vector2d, c:Vector2d, d:Vector2d, w:Number, h:Number ):void 
 		{
-			var w:Number = stage.stageWidth ;
-			var h:Number = stage.stageHeight ;
+			var intersection:Vector2d ;
 			
-			switch ( edge )
+			//	Get the intersection with the top edge
+			intersection = getLineIntersection( a, b, new Vector2d(), new Vector2d( w, 0));
+			if ( intersection == null )
 			{
-				case "top":
-					return getLineIntersection( a, b, new Vector2d(), new Vector2d( w, 0));
-				case "left":
-					return getLineIntersection( a, b, new Vector2d(), new Vector2d( 0, h));
-				case "bottom":
-					return getLineIntersection( a, b, new Vector2d(0,h), new Vector2d( w, h));
-				case "right":
-					return getLineIntersection( a, b, new Vector2d(w,0), new Vector2d( w, h));
+				//	Get the intersection with the left edge
+				intersection = getLineIntersection( a, b, new Vector2d(), new Vector2d( 0, h));
 			}
-			return null ;
+			c.x = intersection.x ;
+			c.y = intersection.y ;
+			
+			//	Get the intersection with the bottom edge
+			intersection = getLineIntersection( a, b, new Vector2d(0,h), new Vector2d( w, h));
+			if ( intersection == null )
+			{
+				//	Get the intersection with the right edge
+				intersection = getLineIntersection( a, b, new Vector2d(w,0), new Vector2d( w, h));
+			}
+			d.x = intersection.x ;
+			d.y = intersection.y ;
 		}
 		
 		/**
@@ -294,13 +296,13 @@ package
 		 * @return 
 		 * 
 		 */		
-		private function getLineIntersection( a:Vector2d, b:Vector2d, c:Vector2d, d:Vector2d ):Vector2d
+		internal static function getLineIntersection( a:Vector2d, b:Vector2d, c:Vector2d, d:Vector2d ):Vector2d
 		{
-			var cross:Number = (( a.x - b.x ) * ( c.y - d.y )) - (( a.y - b.y ) * ( c.x - d.x ));
-			if ( cross == 0 )
+			var determinant:Number = (( a.x - b.x ) * ( c.y - d.y )) - (( a.y - b.y ) * ( c.x - d.x ));
+			if ( determinant == 0 )
 				return null ;
-			var x:Number = (( a.x * b.y - b.x * a.y ) * ( c.x - d.x ) - ( a.x - b.x ) * ( c.x * d.y - d.x * c.y ))/ cross ;
-			var y:Number = (( a.x * b.y - b.x * a.y ) * ( c.y - d.y ) - ( a.y - b.y ) * ( c.x * d.y - d.x * c.y ))/ cross ;
+			var x:Number = (( a.x * b.y - b.x * a.y ) * ( c.x - d.x ) - ( a.x - b.x ) * ( c.x * d.y - d.x * c.y ))/ determinant ;
+			var y:Number = (( a.x * b.y - b.x * a.y ) * ( c.y - d.y ) - ( a.y - b.y ) * ( c.x * d.y - d.x * c.y ))/ determinant ;
 			return new Vector2d( x, y ) ;
 		}
 
@@ -311,7 +313,7 @@ package
 		 * @return 
 		 * 
 		 */		
-		private function getExtremeIndex( polygon:Polygon2d, direction:Vector2d ):int
+		internal static function getExtremeIndex( polygon:Polygon2d, direction:Vector2d ):int
 		{
 			var i:int, j:int = 0 ;
 			while ( true ) 
@@ -327,7 +329,7 @@ package
 						return j ;
 					}
 				} else {
-					if ( polygon.getEdge( mid ).dot( direction ) < 0 )
+					if ( polygon.getEdge( mid-1 ).dot( direction ) < 0 )
 					{
 						j = mid ;
 					} else {
@@ -345,43 +347,11 @@ package
 		 * @param j
 		 * 
 		 */		
-		private function getMiddleIndex( i:int, j:int, n:int ):int
+		internal static function getMiddleIndex( i:int, j:int, n:int ):int
 		{
 			if ( i < j )
 				return int( i + j ) / 2 ;
 			return int(( i + j + n ) / 2 ) % n ;
-		}
-		
-		
-		/**
-		 * Returns true of a.y is less than b.y or
-		 * if a.x is less than b.x
-		 * @param a
-		 * @param b
-		 * 
-		 */		
-		private function lessThan( a:Vector2d, b:Vector2d ):Boolean
-		{
-			if ( a.y < b.y )
-				return true ;
-			return false ;
-		}
-		
-		/**
-		 * Returns true if the dot product of point a with point min
-		 * is less than the dot product of point b with min 
-		 * @param a
-		 * @param b
-		 * @param min
-		 * 
-		 */		
-		private function angleLessThan( a:Vector2d, b:Vector2d, min:Vector2d ):Boolean
-		{
-			var ax:Number = ( a.x - min.x ) ;
-			var ay:Number = ( a.y - min.y ) ;
-			var bx:Number = ( b.x - min.x ) ;
-			var by:Number = ( b.y - min.y ) ;
-			return ( ax/Math.sqrt(ax * ax + ay * ay) < bx/Math.sqrt(bx * bx + by * by));
 		}
 	}
 }
