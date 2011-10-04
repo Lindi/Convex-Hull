@@ -9,7 +9,7 @@ package
 	import geometry.Polygon2d;
 	import geometry.Vector2d;
 	
-	[SWF(width='600',height='600',backgroundColor='#71969f')]
+	[SWF(width='400',height='400',backgroundColor='#71969f')]
 	public class SeparatingAxes extends Sprite
 	{
 		private var polygon:Polygon2d ;
@@ -149,16 +149,16 @@ package
 				//	Draw their separation
 				separateAxes( polygons[i % 2], polygons[(i+1) % 2], colors[ i % 2], colors[(i+1) % 2], graphics );
 				
+				this.graphics.clear();
+				if ( intersect  )
+				{
+					//	Fill with background color
+					this.graphics.beginFill( 0x55808b ) ;
+					this.graphics.drawRect( xmin, ymin, xmax-xmin, ymax - ymin );
+					this.graphics.endFill();				
+				}
 			}
 			
-			this.graphics.clear();
-			if ( intersect  )
-			{
-				//	Fill with background color
-				this.graphics.beginFill( 0x55808b ) ;
-				this.graphics.drawRect( xmin, ymin, xmax-xmin, ymax - ymin );
-				this.graphics.endFill();				
-			}
 
 			
 		}
@@ -176,7 +176,7 @@ package
 		private function getLineSegmentOverlap( a:Vector2d, b:Vector2d, c:Vector2d, d:Vector2d ):Array
 		{
 			//	Does point c fall on the line segment ab?
-			var epsilon:Number = .00001;
+			var epsilon:Number = .000001;
 			var array:Array = new Array();
 			var segments:Array = [[a,b],[c,d]];
 			for ( var i:int = 0; i < 4; i++ )
@@ -188,7 +188,7 @@ package
 				var v:Vector2d = segment[1] as Vector2d ;
 				
 				var crossProduct:Number = ( p.y - u.y ) * ( v.x - u.x ) - ( p.x - u.x ) * ( v.y - u.y ) ;
-				if ( crossProduct <= epsilon )
+				if ( int( crossProduct ) == 0 )
 				{
 					var dotProduct:Number = ( p.x - u.x ) * ( v.x - u.x ) + ( p.y - u.y ) * ( v.y - u.y );
 					var squaredLength:Number = ( v.x - u.x ) * ( v.x - u.x ) + ( v.y - u.y ) * ( v.y - u.y ) ;
@@ -282,9 +282,9 @@ package
 			{
 				var edge:Vector2d = edges[i] ;
 				var vertex:Vector2d = vertices[i];
+				//	Add the edge vector to the vertex to get the second point on the line segment
 				var endpoint:Vector2d = vertex.Add( edge );
 				
-				//	Add the edge vector to the vertex to get the second point on the line segment
 				var c:Vector2d = new Vector2d();
 				var d:Vector2d = new Vector2d();
 				AxisProjection.getEdgeIntersection( vertex, endpoint, c, d, stage.stageWidth, stage.stageHeight ) ;
@@ -294,38 +294,56 @@ package
 				graphics.moveTo( c.x, c.y ) ;
 				graphics.lineTo( d.x, d.y ) ;
 				
-				var index:int = AxisProjection.getExtremeIndex( b, edge );
-				var e:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
+				//	Get the projection on polygon a
+				var index:int = AxisProjection.getExtremeIndex( a, edge );
+				var e:Vector2d = ProjectPointOntoLine( c, d, a.vertices[index]);
+				index = AxisProjection.getExtremeIndex( a, edge.Negate());
+				var f:Vector2d = ProjectPointOntoLine( c, d, a.vertices[index]);
+
+				//	Get the projection on polygon b
+				index = AxisProjection.getExtremeIndex( b, edge );
+				var g:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
 				index = AxisProjection.getExtremeIndex( b, edge.Negate());
-				var f:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
+				var h:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
 
 				//	Draw the line
-				if ( e != null && f != null )
-				{
-					graphics.lineStyle(1,bcolor);
-					graphics.moveTo( e.x, e.y ) ;
-					graphics.lineTo( f.x, f.y ) ;
-				}
+//				if ( e != null && f != null )
+//				{
+//					graphics.lineStyle(1,bcolor);
+//					graphics.moveTo( g.x, g.y ) ;
+//					graphics.lineTo( h.x, h.y ) ;
+//				}
 				
-				//	Draw the line
+				//	Draw the edge
 				graphics.lineStyle(3,acolor);
 				graphics.moveTo( vertex.x, vertex.y ) ;
 				graphics.lineTo( endpoint.x, endpoint.y ) ;
 
 //				//				//	Draw the overlap if any
-				var intersection:Array = getLineSegmentOverlap( vertex, endpoint, e, f);
+				var intersection:Array ;
+				var dotProduct:Number = ( f.x - e.x ) * ( h.x - g.x ) + ( f.y - e.y ) * ( h.y - g.y );
+				if ( dotProduct >= 0 )
+					intersection = getLineSegmentOverlap( g, h, e, f);
+				else intersection = getLineSegmentOverlap( g, h, f, e);
 				if ( intersection != null && intersection.length == 2 )
 				{
-					intersections++ ;
+//					c = intersection[0] as Vector2d ;
+//					d = intersection[1] as Vector2d ;
+
+				} else {
+					intersect = false ;
+				}
+				
+				intersection = getLineSegmentOverlap( vertex, endpoint, g, h);
+				if ( intersection != null && intersection.length == 2 )
+				{
 					c = intersection[0] as Vector2d ;
 					d = intersection[1] as Vector2d ;
 					//	Draw the overlap
 					graphics.lineStyle(3,0xfce4a8);
 					graphics.moveTo( c.x, c.y ) ;
 					graphics.lineTo( d.x, d.y ) ;
-				} else {
-					intersect = false ;
-				}
+				} 
 				
 
 			}
