@@ -9,7 +9,7 @@ package
 	import geometry.Polygon2d;
 	import geometry.Vector2d;
 	
-	[SWF(width='400',height='400',backgroundColor='#71969f')]
+	[SWF(width='400',height='400',backgroundColor='#000000')]
 	public class SeparatingAxes extends Sprite
 	{
 		private var polygon:Polygon2d ;
@@ -38,9 +38,9 @@ package
 			dx = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			dy = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			velocity[0] = new Vector2d( dx, dy );
-			colors[0] = 0xd71921 ;
+			colors[0] = 0x666666 ;
 			sprites[0] = sprite = new Sprite();
-			//sprite.blendMode = BlendMode.ADD ;
+			sprite.blendMode = BlendMode.ADD ;
 			addChild( sprite ) ;
 			
 			centroid = new Vector2d( stage.stageWidth/2, stage.stageHeight/2 ) ;//new Vector2d( margin + int( Math.random() * ( stage.stageWidth-margin * 2)), margin + int( Math.random() * (stage.stageHeight-margin*2)));
@@ -48,9 +48,9 @@ package
 			dx = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			dy = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			velocity[1] = new Vector2d( dx, dy );
-			colors[1] = 0x00324d ;
+			colors[1] = 0x666666 ;
 			sprites[1] = sprite = new Sprite();
-			//sprite.blendMode = BlendMode.ADD ;
+			sprite.blendMode = BlendMode.ADD ;
 			addChild( sprite ) ;
 			
 
@@ -147,20 +147,51 @@ package
 				polygon.updateLines();
 				
 				//	Draw their separation
-				separateAxes( polygons[i % 2], polygons[(i+1) % 2], colors[ i % 2], colors[(i+1) % 2], graphics );
+				separateAxes( polygons[i % 2], polygons[(i+1) % 2], colors[ i % 2], colors[(i+1) % 2], graphics, i == 1 );
 				
-				this.graphics.clear();
-				if ( intersect  )
+			}
+			this.graphics.clear();
+			if ( testIntersection( polygons[0], polygons[1] ))
+			{
+				this.graphics.beginFill( 0x222222 ) ;
+				this.graphics.drawRect( xmin, ymin, xmax-xmin, ymax - ymin );
+				this.graphics.endFill();				
+			}
+		}
+		
+		/**
+		 * Returns true if two polygons intersect, and false if not 
+		 * @param a
+		 * @param b
+		 * @return 
+		 * 
+		 */		
+		private function testIntersection( a:Polygon2d, b:Polygon2d ):Boolean
+		{
+			for ( var i:int = a.vertices.length-1, j:int = 0; j < a.vertices.length; i = j++ )
+			{
+				var p:Vector2d = a.getVertex( j ) ;
+				var n:Vector2d = a.getNormal( i ) ;
+				var index:int = AxisProjection.getExtremeIndex( b, n.Negate() );
+				var q:Vector2d = b.vertices[index] ;
+				if ( n.dot( q.Subtract( p )) > 0)
 				{
-					//	Fill with background color
-					this.graphics.beginFill( 0x55808b ) ;
-					this.graphics.drawRect( xmin, ymin, xmax-xmin, ymax - ymin );
-					this.graphics.endFill();				
+					return false ;
 				}
 			}
+			for ( i = b.vertices.length-1, j = 0; j < b.vertices.length; i = j++ )
+			{
+				p = b.getVertex( j ) ;
+				n = b.getNormal( i ) ;
+				index = AxisProjection.getExtremeIndex( a, n.Negate() );
+				q = a.vertices[index] ;
+				if ( n.dot( q.Subtract( p )) > 0)
+				{
+					return false ;
+				}  
+			}
 			
-
-			
+			return true ;
 		}
 		/**
 		 * Determines the overlap, if any, of two line segments on the same line
@@ -218,7 +249,7 @@ package
 			
 			//	Add points to the polygon
 			var angle:Number = ( Math.PI / 180 ) * ( 360 / points ) ;
-			var scale:Number = 60 ;
+			var scale:Number = 40 ;
 			for ( var i:int = 0; i < points; i++ )
 			{
 				var alpha:Number = angle * i ;
@@ -272,7 +303,7 @@ package
 		}
 		
 		
-		private function separateAxes( a:Polygon2d, b:Polygon2d, acolor:Number, bcolor:Number, graphics:Graphics ):void
+		private function separateAxes( a:Polygon2d, b:Polygon2d, acolor:Number, bcolor:Number, graphics:Graphics, checkIntersection:Boolean = false ):void
 		{
 			//	Go through each edge, and extend the edge to the stage edges	
 			var intersections:int = 0 ;
@@ -290,7 +321,7 @@ package
 				AxisProjection.getEdgeIntersection( vertex, endpoint, c, d, stage.stageWidth, stage.stageHeight ) ;
 				
 				//	Draw the line
-				graphics.lineStyle(.5,acolor,.6);
+				graphics.lineStyle(1,acolor,.5);
 				graphics.moveTo( c.x, c.y ) ;
 				graphics.lineTo( d.x, d.y ) ;
 				
@@ -307,12 +338,12 @@ package
 				var h:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
 
 				//	Draw the line
-//				if ( e != null && f != null )
-//				{
-//					graphics.lineStyle(1,bcolor);
-//					graphics.moveTo( g.x, g.y ) ;
-//					graphics.lineTo( h.x, h.y ) ;
-//				}
+				if ( e != null && f != null )
+				{
+					graphics.lineStyle(1,0xffffff,.5);
+					graphics.moveTo( g.x, g.y ) ;
+					graphics.lineTo( h.x, h.y ) ;
+				}
 				
 				//	Draw the edge
 				graphics.lineStyle(3,acolor);
@@ -320,18 +351,22 @@ package
 				graphics.lineTo( endpoint.x, endpoint.y ) ;
 
 //				//				//	Draw the overlap if any
-				var intersection:Array ;
-				var dotProduct:Number = ( f.x - e.x ) * ( h.x - g.x ) + ( f.y - e.y ) * ( h.y - g.y );
-				if ( dotProduct >= 0 )
-					intersection = getLineSegmentOverlap( g, h, e, f);
-				else intersection = getLineSegmentOverlap( g, h, f, e);
-				if ( intersection != null && intersection.length == 2 )
+				if ( checkIntersection )
 				{
-//					c = intersection[0] as Vector2d ;
-//					d = intersection[1] as Vector2d ;
-
-				} else {
-					intersect = false ;
+					var intersection:Array ;
+					var dotProduct:Number = ( f.x - e.x ) * ( h.x - g.x ) + ( f.y - e.y ) * ( h.y - g.y );
+					if ( dotProduct >= 0 )
+						intersection = getLineSegmentOverlap( g, h, e, f);
+					else intersection = getLineSegmentOverlap( g, h, f, e);
+					if ( intersection != null && intersection.length == 2 )
+					{
+						//					c = intersection[0] as Vector2d ;
+						//					d = intersection[1] as Vector2d ;
+						
+					} else {
+						intersect = false ;
+					}
+					
 				}
 				
 				intersection = getLineSegmentOverlap( vertex, endpoint, g, h);
@@ -339,13 +374,12 @@ package
 				{
 					c = intersection[0] as Vector2d ;
 					d = intersection[1] as Vector2d ;
+					
 					//	Draw the overlap
-					graphics.lineStyle(3,0xfce4a8);
+					graphics.lineStyle(3,0xffffff);
 					graphics.moveTo( c.x, c.y ) ;
 					graphics.lineTo( d.x, d.y ) ;
 				} 
-				
-
 			}
 		}
 		
