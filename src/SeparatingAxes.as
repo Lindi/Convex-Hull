@@ -43,17 +43,24 @@ package
 			sprite.blendMode = BlendMode.ADD ;
 			addChild( sprite ) ;
 			
-			centroid = new Vector2d( stage.stageWidth/2, stage.stageHeight/2 ) ;//new Vector2d( margin + int( Math.random() * ( stage.stageWidth-margin * 2)), margin + int( Math.random() * (stage.stageHeight-margin*2)));
+			centroid = new Vector2d( stage.stageWidth/2, stage.stageHeight/2 ) ;
 			polygons[1] = createPolygon( centroid );
-			dx = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
-			dy = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
+			
+			do
+			{
+				dx = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
+			} while ( dx == velocity[0].x )
+				
+			do
+			{
+				dy = 2 + int( Math.random() * 3 ) * ( 1 - 2 * int( Math.random() * 2 ));
+			} while ( dy == velocity[0].y )
+				
 			velocity[1] = new Vector2d( dx, dy );
 			colors[1] = 0x666666 ;
 			sprites[1] = sprite = new Sprite();
 			sprite.blendMode = BlendMode.ADD ;
 			addChild( sprite ) ;
-			
-
 			
 			//	Enter frame draws everything
 			addEventListener( Event.ENTER_FRAME, frame );
@@ -172,7 +179,7 @@ package
 			{
 				var p:Vector2d = a.getVertex( j ) ;
 				var n:Vector2d = a.getNormal( i ) ;
-				var index:int = AxisProjection.getExtremeIndex( b, n.Negate() );
+				var index:int = Polygon2d.getExtremeIndex( b, n.Negate() );
 				var q:Vector2d = b.vertices[index] ;
 				if ( n.dot( q.Subtract( p )) > 0)
 				{
@@ -183,7 +190,7 @@ package
 			{
 				p = b.getVertex( j ) ;
 				n = b.getNormal( i ) ;
-				index = AxisProjection.getExtremeIndex( a, n.Negate() );
+				index = Polygon2d.getExtremeIndex( a, n.Negate() );
 				q = a.vertices[index] ;
 				if ( n.dot( q.Subtract( p )) > 0)
 				{
@@ -258,41 +265,8 @@ package
 				polygon.addVertex( new Vector2d(( x * scale ) + centroid.x, ( y * scale ) + centroid.y ));
 			}
 			
-			//	Grab the polygon points (should probably name these vertices)
-			var vertices:Vector.<Vector2d> = polygon.vertices ;
-			
-			//	Sort vertices by y-coordinate
-			for ( i = 1; i < vertices.length; i++ )
-			{
-				var j:int = i - 1;
-				var point:Vector2d = vertices[i];
-				while ( j >= 0 && Main.lessThan( point, vertices[j] ))
-				{
-					var tmp:Vector2d = vertices[j] ;
-					vertices[j] = point ;
-					vertices[j+1] = tmp ;
-					j-- ;
-				}
-				vertices[ j+1]= point ;
-			}
-			
-			//	Grab the minimum vertices
-			var min:Vector2d = vertices[0] ;
-			
-			//	Sort the rest of the list in order of dot product with the x-axis
-			for ( i = 2; i < vertices.length; i++ )
-			{
-				j = i - 1 ;
-				point = vertices[i] ;
-				while ( j >= 1 && Main.angleLessThan( point, vertices[j], min ))
-				{
-					tmp = vertices[j]   ;
-					vertices[j] = point ;
-					vertices[j+1] = tmp ;
-					j--;
-				}
-				vertices[j+1]= point ;
-			}
+			//	Order the polygon vertices counter-clockwise
+			polygon.orderVertices();
 			
 			//	Create the collection of polygon edges
 			polygon.updateLines();
@@ -313,6 +287,7 @@ package
 			{
 				var edge:Vector2d = edges[i] ;
 				var vertex:Vector2d = vertices[i];
+				
 				//	Add the edge vector to the vertex to get the second point on the line segment
 				var endpoint:Vector2d = vertex.Add( edge );
 				
@@ -326,15 +301,15 @@ package
 				graphics.lineTo( d.x, d.y ) ;
 				
 				//	Get the projection on polygon a
-				var index:int = AxisProjection.getExtremeIndex( a, edge );
+				var index:int = Polygon2d.getExtremeIndex( a, edge );
 				var e:Vector2d = ProjectPointOntoLine( c, d, a.vertices[index]);
-				index = AxisProjection.getExtremeIndex( a, edge.Negate());
+				index = Polygon2d.getExtremeIndex( a, edge.Negate());
 				var f:Vector2d = ProjectPointOntoLine( c, d, a.vertices[index]);
 
 				//	Get the projection on polygon b
-				index = AxisProjection.getExtremeIndex( b, edge );
+				index = Polygon2d.getExtremeIndex( b, edge );
 				var g:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
-				index = AxisProjection.getExtremeIndex( b, edge.Negate());
+				index = Polygon2d.getExtremeIndex( b, edge.Negate());
 				var h:Vector2d = ProjectPointOntoLine( c, d, b.vertices[index]);
 
 				//	Draw the line

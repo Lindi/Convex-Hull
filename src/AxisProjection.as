@@ -6,9 +6,9 @@ package
 	import flash.geom.Point;
 	import flash.geom.Vector3D;
 	
-	import geometry.Line2d;
 	import geometry.Polygon2d;
 	import geometry.Vector2d;
+	import geometry.LineSegment2d ;
 	
 	[SWF(width='400',height='400',backgroundColor='#ffffff')]
 	public class AxisProjection extends Sprite
@@ -36,49 +36,14 @@ package
 				polygon.addVertex( new Vector2d(( x * scale ) + stage.stageWidth/2, ( y * scale ) + stage.stageHeight/2 ));
 			}
 			
-			
-			//	Grab the polygon points (should probably name these vertices)
-			var points:Vector.<Vector2d> = polygon.vertices ;
-			
-			//	Sort points by y-coordinate
-			for ( i = 1; i < points.length; i++ )
-			{
-				var j:int = i - 1;
-				var point:Vector2d = points[i];
-				while ( j >= 0 && Main.lessThan( point, points[j] ))
-				{
-					var tmp:Vector2d = points[j] ;
-					points[j] = point ;
-					points[j+1] = tmp ;
-					j-- ;
-				}
-				points[ j+1]= point ;
-			}
-			
-			//	Grab the minimum points
-			var min:Vector2d = points[0] ;
-			
-			//	Sort the rest of the list in order of dot product with the x-axis
-			for ( i = 2; i < points.length; i++ )
-			{
-				j = i - 1 ;
-				point = points[i] ;
-				while ( j >= 1 && Main.angleLessThan( point, points[j], min ))
-				{
-					tmp = points[j] ;
-					points[j] = point ;
-					points[j+1] = tmp ;
-					j--;
-				}
-				
-				points[j+1]= point ;
-			}
+			//	Order the polygon's vertices counter-clockwise
+			polygon.orderVertices();
 			
 			//	Create the collection of polygon edges
 			polygon.updateLines();
 			
 			//	Draw the polygon
-			draw( points, graphics ) ;
+			draw( polygon.vertices, graphics ) ;
 			
 			//	Listen for the mouse move event to highlight the nearest polygon edge
 			//	stage.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
@@ -176,7 +141,7 @@ package
 			//	on to the vector from the middle of the polygon to the mouse
 			
 			//	First, get the extreme vertex and draw it
-			var extreme:int = getExtremeIndex( polygon, direction );
+			var extreme:int = Polygon2d.getExtremeIndex( polygon, direction );
 			var vertex:Vector2d = polygon.getVertex( extreme ) ;
 			graphics.lineStyle( undefined ) ;
 			graphics.beginFill( 0xff0000 );
@@ -212,7 +177,7 @@ package
 			
 			//	Now do it in the other direction
 			direction.negate();
-			extreme = getExtremeIndex( polygon, direction );
+			extreme = Polygon2d.getExtremeIndex( polygon, direction );
 			vertex = polygon.getVertex( extreme ) ;
 			graphics.lineStyle( undefined ) ;
 			graphics.beginFill( 0xff0000 );
@@ -266,92 +231,25 @@ package
 			var intersection:Vector2d ;
 			
 			//	Get the intersection with the top edge
-			intersection = getLineIntersection( a, b, new Vector2d(), new Vector2d( w, 0));
+			intersection = LineSegment2d.getLineIntersection( a, b, new Vector2d(), new Vector2d( w, 0));
 			if ( intersection == null )
 			{
 				//	Get the intersection with the left edge
-				intersection = getLineIntersection( a, b, new Vector2d(), new Vector2d( 0, h));
+				intersection = LineSegment2d.getLineIntersection( a, b, new Vector2d(), new Vector2d( 0, h));
 			}
 			c.x = intersection.x ;
 			c.y = intersection.y ;
 			
 			//	Get the intersection with the bottom edge
-			intersection = getLineIntersection( a, b, new Vector2d(0,h), new Vector2d( w, h));
+			intersection = LineSegment2d.getLineIntersection( a, b, new Vector2d(0,h), new Vector2d( w, h));
 			if ( intersection == null )
 			{
 				//	Get the intersection with the right edge
-				intersection = getLineIntersection( a, b, new Vector2d(w,0), new Vector2d( w, h));
+				intersection = LineSegment2d.getLineIntersection( a, b, new Vector2d(w,0), new Vector2d( w, h));
 			}
 			d.x = intersection.x ;
 			d.y = intersection.y ;
 		}
 		
-		/**
-		 * Given two pairs of points, each of which define a line segment, find the intersection between
-		 * the points 
-		 * @param a
-		 * @param b
-		 * @param c
-		 * @param d
-		 * @return 
-		 * 
-		 */		
-		internal static function getLineIntersection( a:Vector2d, b:Vector2d, c:Vector2d, d:Vector2d ):Vector2d
-		{
-			var determinant:Number = (( a.x - b.x ) * ( c.y - d.y )) - (( a.y - b.y ) * ( c.x - d.x ));
-			if ( determinant == 0 )
-				return null ;
-			var x:Number = (( a.x * b.y - b.x * a.y ) * ( c.x - d.x ) - ( a.x - b.x ) * ( c.x * d.y - d.x * c.y ))/ determinant ;
-			var y:Number = (( a.x * b.y - b.x * a.y ) * ( c.y - d.y ) - ( a.y - b.y ) * ( c.x * d.y - d.x * c.y ))/ determinant ;
-			return new Vector2d( x, y ) ;
-		}
-
-		
-		/**
-		 * Returns the extreme index of the polygon 
-		 * @param polygon
-		 * @return 
-		 * 
-		 */		
-		internal static function getExtremeIndex( polygon:Polygon2d, direction:Vector2d ):int
-		{
-			var i:int, j:int = 0 ;
-			while ( true ) 
-			{
-				var mid:int = getMiddleIndex( i, j, polygon.vertices.length );
-				if ( polygon.getEdge( mid ).dot( direction ) > 0 )
-				{
-					if ( i != mid )
-					{
-						i = mid ;
-					} else
-					{
-						return j ;
-					}
-				} else {
-					if ( polygon.getEdge( mid-1 ).dot( direction ) < 0 )
-					{
-						j = mid ;
-					} else {
-						
-						return mid ;
-					}
-				}
-			}
-			return 0 ;
-		}
-		
-		/**
-		 * Returns the index 'between' i and j 
-		 * @param i
-		 * @param j
-		 * 
-		 */		
-		internal static function getMiddleIndex( i:int, j:int, n:int ):int
-		{
-			if ( i < j )
-				return int( i + j ) / 2 ;
-			return int(( i + j + n ) / 2 ) % n ;
-		}
 	}
 }
