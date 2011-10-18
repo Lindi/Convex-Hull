@@ -2,6 +2,8 @@ package
 {
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 	import flash.utils.getTimer;
 	
 	import geometry.AABB;
@@ -16,6 +18,7 @@ package
 		private var polygons:Vector.<Polygon2d> = new Vector.<Polygon2d>(2,true);
 		private var velocity:Vector.<Vector2d> = new Vector.<Vector2d>(2,true);
 		private var t:Number ;
+		private var timer:Timer ;
 
 		public function CollisionResponse()
 		{
@@ -31,8 +34,8 @@ package
 			//	Create a polygon 
 			var centroid:Vector2d = new Vector2d( stage.stageWidth/2, stage.stageHeight/2 ) ;
 			polygons[0] = createPolygon( centroid );
-			dx = 60 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
-			dy = 60 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
+			dx = 40 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
+			dy = 40 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			velocity[0] = new Vector2d( dx, dy );
 			
 			//	Create another polygon, and make sure they don't intersect
@@ -41,12 +44,12 @@ package
 			
 			do
 			{
-				dx = 60 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
+				dx = 40 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			} while ( dx == velocity[0].x )
 			
 			do
 			{
-				dy = 60 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
+				dy = 40 + int( Math.random() * 10 ) * ( 1 - 2 * int( Math.random() * 2 ));
 			} while ( dy == velocity[0].y )
 			
 			velocity[1] = new Vector2d( dx, dy );
@@ -56,7 +59,9 @@ package
 			
 			//	Enter frame draws everything
 			addEventListener( Event.ENTER_FRAME, frame );
-			
+//			timer = new Timer(40);
+//			timer.addEventListener(TimerEvent.TIMER,frame);
+//			timer.start();
 		}
 		
 		/**
@@ -89,22 +94,34 @@ package
 				if ( aabb.xmin <= 0 )
 				{
 					if ( velocity[i].dot( new Vector2d( 1, 0 )) < 0 )
+					{
 						velocity[i].x = -velocity[i].x ;
+						centroid.x -= aabb.xmin ;
+					}
 				}
 				if ( aabb.xmax >= stage.stageWidth )
 				{
 					if ( velocity[i].dot( new Vector2d( -1, 0 )) < 0 )
+					{
 						velocity[i].x = -velocity[i].x ;
+						centroid.x -= ( aabb.xmax - stage.stageWidth ) ;
+					}
 				}
 				if ( aabb.ymin <= 0 )
 				{
 					if ( velocity[i].dot( new Vector2d( 0, 1 )) < 0 )
+					{
 						velocity[i].y = -velocity[i].y ;
+						centroid.y -= aabb.ymin ;
+					}
 				}
 				if ( aabb.ymax >= stage.stageHeight )
 				{
 					if ( velocity[i].dot( new Vector2d( 0, -1 )) < 0 )
+					{
 						velocity[i].y = -velocity[i].y ;
+						centroid.x -= ( aabb.ymax - stage.stageHeight ) ;
+					}
 				}
 				
 				//	Move the polygons
@@ -115,7 +132,7 @@ package
 				var vertices:Vector.<Vector2d> = polygon.vertices ;
 				for ( var j:int = 0; j < vertices.length; j++ )
 				{
-					var alpha:Number = Math.PI / 90 ;//( angle * j ) + omega ;
+					var alpha:Number = 0;//Math.PI / 90 ;
 					var vertex:Vector2d = vertices[j] ;	
 					vertex.x -= polygon.centroid.x ;
 					vertex.y -= polygon.centroid.y ;
@@ -124,8 +141,6 @@ package
 					vertex.x = x + centroid.x ;
 					vertex.y = y + centroid.y ;
 				}
-				
-				
 				polygon.centroid.x = centroid.x ;
 				polygon.centroid.y = centroid.y ;
 				
@@ -154,7 +169,7 @@ package
 				{
 					x = polygon.vertices[i].x ;
 					y = polygon.vertices[i].y ;
-					vertex = polygon.getVertex( i-1);
+					var vertex:Vector2d = polygon.getVertex( i-1);
 					graphics.moveTo( vertex.x, vertex.y);
 					graphics.lineTo( x, y ) ;
 				}
