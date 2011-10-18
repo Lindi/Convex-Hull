@@ -132,8 +132,6 @@ package
 				
 				//	Rotate the polygons
 				var vertices:Vector.<Vector2d> = polygon.vertices ;
-				//var angle:Number = ( Math.PI / 180 ) * ( 360 / vertices.length ) ;
-				//var scale:Number = 60 ;
 				for ( var j:int = 0; j < vertices.length; j++ )
 				{
 					var alpha:Number = Math.PI / 90 ;//( angle * j ) + omega ;
@@ -270,6 +268,9 @@ package
 			
 			//	Create the collection of polygon edges
 			polygon.updateLines();
+			
+			//	Create the tree used to determine the extreme vertices
+			polygon.createTree();
 			
 			//	Return the polygon
 			return polygon ;

@@ -42,6 +42,9 @@ package
 			//	Create the collection of polygon edges
 			polygon.updateLines();
 			
+			//	Create the binary space partitioning tree
+			polygon.createTree();
+			
 			//	Draw the polygon
 			draw( polygon.vertices, graphics ) ;
 			
