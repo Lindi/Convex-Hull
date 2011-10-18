@@ -71,28 +71,41 @@ package
 			t = getTimer();
 			
 			//	Resolve the collision (if any)
-			PolygonIntersection.ResolveIntersection( polygons[0], polygons[1], velocity[0], velocity[1], dt )
+			PolygonIntersection.ResolveIntersection( polygons[0], polygons[1], velocity[0], velocity[1], dt );
 			
 			//	Update the position of the polygons
 			for ( var i:int = 0; i < polygons.length; i++ )
 			{
+				//	Grab a polygon
 				var polygon:Polygon2d = polygons[i];
+				
 				//	Get the AABB
 				var aabb:AABB = getAABB( polygon ) ;
-				
 				
 				//	Get the centroid
 				var centroid:Vector2d = polygon.centroid.clone() ;
 				
 				//	Wrap the polygon position if it's offstage
 				if ( aabb.xmin <= 0 )
-					velocity[i].negate();
+				{
+					if ( velocity[i].dot( new Vector2d( 1, 0 )) < 0 )
+						velocity[i].x = -velocity[i].x ;
+				}
 				if ( aabb.xmax >= stage.stageWidth )
-					velocity[i].negate();
+				{
+					if ( velocity[i].dot( new Vector2d( -1, 0 )) < 0 )
+						velocity[i].x = -velocity[i].x ;
+				}
 				if ( aabb.ymin <= 0 )
-					velocity[i].negate();
+				{
+					if ( velocity[i].dot( new Vector2d( 0, 1 )) < 0 )
+						velocity[i].y = -velocity[i].y ;
+				}
 				if ( aabb.ymax >= stage.stageHeight )
-					velocity[i].negate();
+				{
+					if ( velocity[i].dot( new Vector2d( 0, -1 )) < 0 )
+						velocity[i].y = -velocity[i].y ;
+				}
 				
 				//	Move the polygons
 				centroid.x += ( velocity[i].x * dt ) ;
